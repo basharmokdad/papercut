@@ -29,7 +29,7 @@ Everything that ships in the video is either generated from a seed or free to us
 You need Python 3.10+, Node 18+, FFmpeg and git.
 
 ```bash
-git clone https://github.com/blsgo/papercut
+git clone https://github.com/basharmokdad/papercut
 cd papercut
 ./setup.sh          # macOS / Linux
 # or on Windows:
