@@ -94,7 +94,7 @@ html, body { width: %(W)dpx; height: %(H)dpx; overflow: hidden; background: #1a1
   filter: drop-shadow(5px 8px 5px rgba(20,14,8,.5)); }
 .doc { position: relative; background: url("assets/paper/cream.jpg") center/cover; padding: 70px 64px; font-family: "Elite"; color: #1a1714;
   filter: drop-shadow(8px 12px 10px rgba(20,14,8,.45)); }
-.doc .ln { position: relative; font-size: 46px; line-height: 1.55; white-space: nowrap; overflow: hidden; }
+.doc .ln { position: relative; font-size: var(--fs, 46px); line-height: 1.55; white-space: nowrap; overflow: hidden; }
 .doc .ln .tx { display: inline-block; }
 .doc .bar { position: absolute; left: -6px; top: 10px; height: 46px; background: #141210; transform-origin: 0 50%%; }
 .doc .hl { position: absolute; left: -8px; bottom: 4px; height: 18px; background: rgba(214,165,52,.75); transform-origin: 0 50%%; mix-blend-mode: multiply; }
@@ -138,6 +138,7 @@ def wobble_ellipse(rng, w, h):
 class Film:
     def __init__(self, story, timing, words, proj, images):
         self.s, self.timing, self.words, self.proj, self.img = story, timing, words, proj, images
+        self.root = os.path.dirname(os.path.abspath(proj))
         fmt = story.get("format", "9:16")
         self.W, self.H = (1080, 1920) if fmt == "9:16" else (1920, 1080)
         self.v = fmt == "9:16"
@@ -191,6 +192,21 @@ class Film:
     def boil_all(self, ids, t0, dur, amp=1.0):
         for k, i in enumerate(ids):
             self.b.js.append(f'boil("#{i}b", {t0:.3f}, {dur:.3f}, {self.b.n + k}, {amp});')
+
+    def media(self, path):
+        """Copy a footage file into the project (once) and return (src, w, h)."""
+        import subprocess
+        src = os.path.join(self.root, path)
+        name = os.path.basename(path)
+        dst = os.path.join(self.proj, "assets", "clips", name)
+        if not os.path.exists(dst):
+            os.makedirs(os.path.dirname(dst), exist_ok=True)
+            # a light 720p copy keeps the render fast; footage sits small inside a paper print anyway
+            subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", src, "-vf", "scale='min(720,iw)':-2", "-an",
+                            "-c:v", "libx264", "-crf", "20", "-g", "15", dst], check=True)
+        out = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height",
+                              "-of", "csv=p=0", dst], capture_output=True, text=True).stdout.strip().split(",")
+        return f"assets/clips/{name}", int(out[0]), int(out[1])
 
     # ----- reusable pieces -----
     def piece(self, key, box_w, box_h):
@@ -321,6 +337,38 @@ class Film:
                 b.ev(ta, "draw", g=0.6)
             self._labels(beat, t, dur, fresh, top=min(ly, ry), bottom=max(ly + lh, ry + rh), cx=cx)
 
+        elif kind == "clip":
+            # taped prints with real footage playing inside (one big, or a grid of up to four)
+            items = beat.get("clips") or [{"clip": beat["clip"], "from": beat.get("from", 0)}]
+            n = len(items)
+            cols = 1 if n == 1 else 2
+            rows = (n + cols - 1) // cols
+            area_w = (x1 - x0) - 40
+            area_h = (900 if self.v else 640) if n == 1 else (1060 if self.v else 680)
+            cy = beat.get("hero_y", 870 if self.v else 470)
+            cell_w, cell_h = area_w / cols, area_h / rows
+            tops = []
+            for j, it in enumerate(items):
+                src, vw, vh = self.media(it["clip"])
+                sc = min((cell_w - 50) / vw, (cell_h - 50) / vh)
+                w, h = vw * sc, vh * sc
+                ccx = x0 + 20 + cell_w * (j % cols + 0.5)
+                ccy = cy - area_h / 2 + cell_h * (j // cols + 0.5)
+                vid = b.id("v")
+                d0 = max(0.0, t0 - 0.3)
+                inner = (f'<div style="position:relative;width:{w + 28:.0f}px;padding:14px;background:url(assets/paper/cream.jpg) center/cover;'
+                         f'box-shadow:{14 if j % 2 else -14}px 12px 0 {rgb(beat.get("accent", "red"))}, 6px 12px 18px rgba(20,14,8,.45)">'
+                         f'<video id="{vid}" class="clip" src="{src}" muted playsinline data-start="{d0:.3f}" '
+                         f'data-duration="{self.scene_end - d0:.3f}" data-media-start="{it.get("from", 0):.3f}" data-track-index="3" '
+                         f'style="display:block;width:{w:.0f}px;height:{h:.0f}px;object-fit:cover"></video></div>')
+                rot = b.r(-4, 4)
+                i = self.el(inner, ccx - (w + 28) / 2, ccy - (h + 28) / 2, w + 28, 10 + j)
+                fresh.append((i, dict(how="slide", dur=0.45, rot=rot), t + 0.05 + j * 0.16))
+                ti, _ = self.tape_on(ccx, ccy - (h + 28) / 2 + 6, b.r(-6, 6), 30 + j)
+                fresh.append((ti, dict(how="drop", rot=b.r(-6, 6)), t + 0.4 + j * 0.16))
+                tops.append(ccy - (h + 28) / 2)
+            self._labels(beat, t, dur, fresh, top=min(tops), bottom=cy + area_h / 2, cx=cx)
+
         elif kind == "number":
             text = str(beat["number"])
             if " " in text and len(text) > 5:
@@ -365,17 +413,19 @@ class Film:
 
         elif kind == "document":
             lines = beat.get("lines", [])
+            fs = 58 if max((len(x) for x in lines), default=0) <= 20 else 46  # short lines read bigger on a phone
             dw = 900 if self.v else 1000
             est_h = 140 + (92 if beat.get("head") else 0) + len(lines) * 74
             dy = beat.get("doc_y", (845 - est_h / 2) if self.v else 120)
             rows = []
             for li, ln in enumerate(lines):
-                bar = '<div class="bar" style="width:{w}px;transform:scaleX(0)"></div>'.format(w=len(ln) * 27 + 12) if li in beat.get("redact", []) else ""
-                hl = '<div class="hl" style="width:{w}px;transform:scaleX(0)"></div>'.format(w=len(ln) * 27 + 16) if li == beat.get("mark") else ""
+                bar = '<div class="bar" style="width:{w}px;transform:scaleX(0)"></div>'.format(w=len(ln) * fs * 0.6 + 12) if li in beat.get("redact", []) else ""
+                hl = '<div class="hl" style="width:{w}px;transform:scaleX(0)"></div>'.format(w=len(ln) * fs * 0.6 + 16) if li == beat.get("mark") else ""
                 rows.append(f'<div class="ln ln{li}"><span class="tx" style="clip-path:inset(0 100% 0 0)">{ln}</span>{hl}{bar}</div>')
             head = beat.get("head")
             hh = f'<div style="font-family:Anton;font-size:64px;letter-spacing:4px;margin-bottom:28px">{head}</div>' if head else ""
-            inner = f'<div class="doc" style="clip-path:{torn_clip(b.rng, tear=1.2, ends=False)}">{hh}{"".join(rows)}</div>'
+            inner = (f'<div class="doc" style="clip-path:{torn_clip(b.rng, tear=1.2, ends=False)};--fs:{fs}px">'
+                     f'{hh}{"".join(rows)}</div>')
             di = self.el(inner, cx - dw / 2, dy, dw, 10)
             fresh.append((di, dict(how="slide", dur=0.5, rot=b.r(-2.5, 2.5)), t + 0.02))
             tt = t + 0.35
@@ -543,6 +593,7 @@ class Film:
             bgf = f"assets/paper/bg_{bg}_{k % 3}.jpg"
             self.need_bg.add((bg, k % 3))
             self.cur_bg = bg
+            self.scene_end = s_end
             body = self.scene(k, beat, t0, nxt - t0, s_end, trans)
             sid = f"s{k}"
             scenes_html.append(

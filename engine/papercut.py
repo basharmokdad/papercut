@@ -148,15 +148,11 @@ def make(path, render=False):
     events = build.write_project(story, timing, words, total, proj, imgs)
     print("sound")
     mix(story, proj, events, total)
-    r = subprocess.run([NPX, "hyperframes", "check", proj, "--json"], capture_output=True, text=True, encoding="utf-8")
-    try:
-        rep = json.loads(r.stdout[r.stdout.index("{"):])
-        errs = [x for x in rep.get("findings", rep.get("issues", [])) if x.get("severity") == "error"]
-        print(f"check: {len(errs)} errors")
-        for e in errs[:10]:
-            print("  ", e.get("message") or e)
-    except Exception:
-        print(r.stdout[-1500:], r.stderr[-800:])
+    r = subprocess.run([NPX, "hyperframes", "check", proj], capture_output=True, text=True, encoding="utf-8", errors="replace")
+    errs = [ln.strip() for ln in (r.stdout + r.stderr).splitlines() if ln.strip().startswith("✗")]
+    print(f"check: {len(errs)} errors")
+    for e in errs[:10]:
+        print("  ", e[:220])
     if render:
         out = os.path.join(root, story.get("slug", "video") + ".mp4")
         subprocess.run([NPX, "hyperframes", "render", proj, "-o", out, "-q", "delivery", "--quiet"], check=True)
