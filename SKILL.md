@@ -19,7 +19,11 @@ One topic in, one finished 30-60 s documentary out. No video model, no image mod
 | Maps | Natural Earth via world-atlas + d3-geo | public domain / ISC |
 | Fonts | Anton, Archivo Black, Special Elite, Permanent Marker | OFL / Apache-2.0 |
 
-Engine: `engine/papercut.py`. Python: the venv from setup. Every command below runs from the film's folder.
+Paths (relative to this skill's own folder, the one this SKILL.md is in):
+- engine: `<skill>/engine/papercut.py`
+- python: `<skill>/.venv/Scripts/python.exe` on Windows, `<skill>/.venv/bin/python` on macOS / Linux (made by setup)
+
+Make one folder per film and run every command from inside it, e.g. `"<python>" "<skill>/engine/papercut.py" make story.json`.
 
 ## The workflow (run it in this order, stop where it says)
 
@@ -37,7 +41,7 @@ Search the topic. Every date, name and number in the script needs two independen
 ### 3. Pictures
 
 ```
-python <engine>/papercut.py search "Grace Hopper" sheet.png
+<python> <skill>/engine/papercut.py search "Grace Hopper" sheet.png
 ```
 
 Open `sheet.png` and pick by looking, not by title. Rules learned the hard way:
@@ -86,13 +90,13 @@ Labels: 1-3 words, uppercase. `label_size` shrinks long ones; `|` breaks a line.
 ### 5. Build, look, fix, render
 
 ```
-python <engine>/papercut.py make story.json            # images, voice, animation, sound
+<python> <skill>/engine/papercut.py make story.json            # images, voice, animation, sound
 ```
 
 1. Open `pieces.jpg`: every cut-out on one sheet. A blob or a missing face means re-crop, raise `contrast`, or switch to `cut: false`.
-2. `python <engine>/papercut.py snap story.json 2.1,5.4,...` with a time near the end of each beat (beat times are in `project/assets/audio/timing.json`). Check every frame: nothing off the edge, nothing important under the captions, every stamp readable.
+2. `<python> <skill>/engine/papercut.py snap story.json 2.1,5.4,...` with a time near the end of each beat (beat times are in `project/assets/audio/timing.json`). Check every frame: nothing off the edge, nothing important under the captions, every stamp readable.
 3. Fix story.json and run `make` again (cut-outs and voice are cached, only what changed is rebuilt).
-4. `python <engine>/papercut.py make story.json --render` writes `<slug>.mp4` (1080x1920, 30 fps, -14 LUFS).
+4. `<python> <skill>/engine/papercut.py make story.json --render` writes `<slug>.mp4` (1080x1920, 30 fps, -14 LUFS).
 
 Credits for every photo are written to `CREDITS.txt`. Put them in the video description.
 
