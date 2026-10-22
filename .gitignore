@@ -10,3 +10,4 @@ engine/data/*.json
 **/pieces.jpg
 **/sheet.png
 **/sheet.png.json
+engine/CREDITS.txt
