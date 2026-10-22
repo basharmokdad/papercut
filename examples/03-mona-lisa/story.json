@@ -1,0 +1,23 @@
+{
+  "title": "The Mona Lisa Theft", "slug": "mona-lisa-theft", "format": "9:16", "voice": "af_heart", "music": "bed", "seed": 33,
+  "images": {
+    "wall": {"commons": "File:Mona Lisa stolen-1911.jpg", "cut": false, "accent": "red", "size": 900},
+    "peruggia": {"commons": "File:Vincenzo peruggia.jpg", "cut": true, "accent": "red"},
+    "mona": {"commons": "File:Mona Lisa, by Leonardo da Vinci, from C2RMF retouched.jpg", "cut": false, "accent": "mustard", "size": 1000},
+    "picasso": {"commons": "File:Pablo Picasso in his Montmartre studio, 1908.jpg", "cut": true, "accent": "teal", "crop": [0.47, 0.28, 1.0, 0.86], "contrast": 1.3},
+    "monacut": {"commons": "File:Mona Lisa, by Leonardo da Vinci, from C2RMF retouched.jpg", "cut": true, "accent": "red", "size": 1000}
+  },
+  "beats": [
+    {"say": "August 1911. The Louvre, Paris.", "kind": "map", "bg": "mustard", "map": {"country": "France", "pin": [2.34, 48.86], "place": "THE LOUVRE", "sea": "teal"}, "label": "08.1911"},
+    {"say": "A painter comes to sketch the Mona Lisa, and finds an empty wall.", "kind": "photo", "bg": "red", "photo": "wall", "label": "AN EMPTY WALL", "tag": "THE LOUVRE, 1911"},
+    {"say": "The painting has been gone for more than a day.", "kind": "number", "bg": "navy", "number": "24+ HRS", "sub": "MISSING", "stamp": "STOLEN"},
+    {"say": "Police question hundreds of people, even Pablo Picasso.", "kind": "hero", "bg": "teal", "hero": "picasso", "label": "PICASSO", "stamp": "QUESTIONED", "stamp_on": "Picasso"},
+    {"say": "But the thief is a Louvre worker named Vincenzo Peruggia.", "kind": "hero", "bg": "newsprint", "hero": "peruggia", "label": "THE THIEF", "tag": "VINCENZO PERUGGIA", "circle": true},
+    {"say": "He walks out with it, hidden under his work smock.", "kind": "document", "bg": "kraft", "head": "POLICE REPORT", "lines": ["ITEM: MONA LISA", "EXIT: STAFF STAIRS", "COVER: WORK SMOCK"], "redact": [1]},
+    {"say": "For more than two years, the Mona Lisa sits in his room in Paris.", "kind": "number", "bg": "red", "number": "2 YEARS", "hero": "mona"},
+    {"say": "In 1913, he takes it to an art dealer in Florence.", "kind": "map", "bg": "mustard", "map": {"highlight": ["France", "Italy"], "pin": [11.25, 43.77], "place": "FLORENCE", "sea": "navy"}, "label": "1913"},
+    {"say": "The dealer calls the police.", "kind": "hero", "bg": "navy", "hero": "peruggia", "stamp": "ARRESTED", "stamp_on": "police"},
+    {"say": "Before the theft, it was not the world's most famous painting.", "kind": "photo", "bg": "newsprint", "photo": "mona", "stamp": "NOT YET", "stamp_on": "famous"},
+    {"say": "After it, it was.", "kind": "hero", "bg": "red", "hero": "monacut", "label": "MOST FAMOUS", "burst": true}
+  ]
+}

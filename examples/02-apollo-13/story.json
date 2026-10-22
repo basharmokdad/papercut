@@ -1,0 +1,25 @@
+{
+  "title": "Apollo 13", "slug": "apollo-13", "format": "9:16", "voice": "af_heart", "music": "bed", "seed": 21,
+  "images": {
+    "sm": {"commons": "File:Apollo 13 SM.jpg", "cut": false, "accent": "red", "size": 1100},
+    "crew": {"commons": "File:Apollo 13 Prime Crew.jpg", "cut": true, "accent": "mustard", "size": 1100},
+    "swigert": {"commons": "File:Jack Swigert.jpg", "cut": true, "accent": "red", "crop": [0.12, 0.05, 0.9, 0.75]},
+    "lm": {"commons": "File:Apollo 13 Lunar Module after separation from CSM (AS13-59-8562).jpg", "cut": false, "accent": "teal", "crop": [0.1, 0.12, 0.9, 0.88], "size": 1000},
+    "mailbox": {"commons": "File:Apollo 13 Mailbox at Mission Control.jpg", "cut": false, "accent": "mustard", "size": 1100},
+    "splash": {"commons": "File:Apollo13 splashdown.jpg", "cut": false, "accent": "red", "size": 1000}
+  },
+  "beats": [
+    {"say": "April thirteenth, 1970. Two hundred thousand miles from Earth.", "kind": "number", "bg": "navy", "number": "200,000 MI", "sub": "13.04.1970"},
+    {"say": "An oxygen tank on Apollo Thirteen explodes.", "kind": "photo", "bg": "red", "photo": "sm", "label": "APOLLO 13", "stamp": "EXPLOSION", "stamp_on": "explodes"},
+    {"say": "Jack Swigert radios: Okay, Houston, we've had a problem here.", "kind": "quote", "bg": "mustard", "hero": "swigert", "quote": "Houston, we've had a problem here.", "by": "Jack Swigert, 1970"},
+    {"say": "The moon landing is off. Now the only goal is getting three men home.", "kind": "hero", "bg": "teal", "hero": "crew", "label": "LOVELL · SWIGERT · HAISE", "label_size": 70, "stamp": "GET HOME", "burst": true},
+    {"say": "They power down the command module and move into the lunar lander.", "kind": "photo", "bg": "mustard", "photo": "lm", "label": "AQUARIUS", "tag": "THE LUNAR MODULE"},
+    {"say": "A lifeboat built for two people, now carrying three.", "kind": "number", "bg": "kraft", "number": "2 → 3", "sub": "BUILT FOR TWO", "stamp": "OVERLOAD"},
+    {"say": "Then the carbon dioxide starts rising.", "kind": "number", "bg": "red", "number": "CO2", "sub": "RISING", "scraps": 3},
+    {"say": "Engineers on the ground build a fix from plastic bags, cardboard and tape.", "kind": "document", "bg": "mustard", "head": "THE FIX", "lines": ["1. PLASTIC BAGS", "2. CARDBOARD", "3. DUCT TAPE"], "mark": 2},
+    {"say": "They call it the mailbox. The crew copies it, piece by piece.", "kind": "photo", "bg": "teal", "photo": "mailbox", "label": "THE MAILBOX", "tag": "MISSION CONTROL, 1970"},
+    {"say": "April seventeenth. Splashdown in the South Pacific.", "kind": "photo", "bg": "navy", "photo": "splash", "label": "17.04.1970", "stamp": "HOME", "stamp_on": "Pacific"},
+    {"say": "Apollo Thirteen never touched the moon.", "kind": "timeline", "bg": "newsprint", "dates": ["LAUNCH", "MOON", "HOME"], "active": 2, "label": "NO LANDING"},
+    {"say": "It is still called a successful failure.", "kind": "quote", "bg": "red", "quote": "A successful failure.", "by": "Apollo 13, 1970"}
+  ]
+}

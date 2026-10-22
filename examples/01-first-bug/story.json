@@ -1,0 +1,34 @@
+{
+  "title": "The First Computer Bug",
+  "slug": "first-computer-bug",
+  "format": "9:16",
+  "voice": "af_heart",
+  "speed": 1.0,
+  "music": "bed",
+  "images": {
+    "tape": {"commons": "File:First Computer Bug, 1947.jpg", "crop": [0.115, 0.535, 0.45, 0.715], "cut": false, "accent": "mustard", "size": 1100, "dots": false},
+    "line": {"commons": "File:First Computer Bug, 1947.jpg", "crop": [0.13, 0.69, 0.79, 0.785], "cut": false, "accent": null, "size": 1200, "dots": false},
+    "page": {"commons": "File:First Computer Bug, 1947.jpg", "cut": false, "accent": "red", "size": 1200, "dots": false},
+    "hopper": {"commons": "File:Commodore Grace M. Hopper, USN (covered) head and shoulders crop.jpg", "cut": true, "accent": "red"},
+    "edison": {"commons": "File:Portrait of Thomas Edison. (409fa731e3364ed99012ccedfdce3e28).jpg", "cut": true, "accent": "teal"}
+  },
+  "beats": [
+    {"say": "September ninth, 1947. Harvard University.", "kind": "document", "bg": "mustard",
+     "head": "OPERATIONS LOG", "lines": ["DATE: 9 SEPT 1947", "MACHINE: MARK II", "STATUS: RUNNING"], "label": "09.09.1947"},
+    {"say": "Mid-afternoon, one of the world's first computers starts making errors.", "kind": "number", "bg": "red",
+     "number": "15:45", "sub": "ERRORS", "stamp": "FAULT"},
+    {"say": "The team opens Panel F and checks the relays, one by one.", "kind": "timeline", "bg": "teal",
+     "dates": ["#68", "#69", "#70", "#71"], "active": 2, "label": "PANEL F"},
+    {"say": "In relay number seventy, they find it.", "kind": "number", "bg": "navy", "number": "#70", "stamp": "FOUND", "scraps": 3},
+    {"say": "A moth.", "kind": "photo", "bg": "newsprint", "photo": "tape", "label": "A MOTH", "burst": true, "burst_color": "mustard"},
+    {"say": "They tape it into the logbook, and write one line.", "kind": "photo", "bg": "kraft", "photo": "page", "tag": "THE REAL LOGBOOK PAGE"},
+    {"say": "First actual case of bug being found.", "kind": "photo", "bg": "mustard", "photo": "line", "label": "THE NOTE", "stamp": "1947", "stamp_on": "found"},
+    {"say": "Grace Hopper told this story for decades, and the word stuck.", "kind": "hero", "bg": "red", "hero": "hopper",
+     "label": "GRACE HOPPER", "tag": "U.S. NAVY", "burst": true},
+    {"say": "But engineers were already calling glitches bugs in Thomas Edison's time.", "kind": "timeline", "bg": "teal",
+     "dates": ["1878", "1947", "TODAY"], "active": 0, "hero": "edison", "label": "EDISON"},
+    {"say": "The moth just made it literal.", "kind": "hero", "bg": "newsprint", "hero": "tape", "circle": true, "label": "LITERALLY"},
+    {"say": "That page is now kept at the Smithsonian.", "kind": "photo", "bg": "navy", "photo": "page", "stamp": "SMITHSONIAN", "stamp_on": "Smithsonian"},
+    {"say": "Seventy-nine years later, we are still debugging.", "kind": "number", "bg": "red", "number": "79 YEARS", "sub": "STILL DEBUGGING"}
+  ]
+}

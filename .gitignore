@@ -1,0 +1,12 @@
+.venv/
+_test/
+__pycache__/
+engine/data/*.js
+engine/data/*.json
+**/project/
+**/sources/
+**/snaps*/
+**/*.mp4
+**/pieces.jpg
+**/sheet.png
+**/sheet.png.json

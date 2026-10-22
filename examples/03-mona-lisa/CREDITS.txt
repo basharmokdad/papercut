@@ -1,0 +1,5 @@
+wall.jpg: File:Mona Lisa stolen-1911.jpg | Unknown authorUnknown author | Public domain | https://commons.wikimedia.org/wiki/File:Mona_Lisa_stolen-1911.jpg
+peruggia.jpg: File:Vincenzo peruggia.jpg | Unknown authorUnknown author | Public domain | https://commons.wikimedia.org/wiki/File:Vincenzo_peruggia.jpg
+mona.jpg: File:Mona Lisa, by Leonardo da Vinci, from C2RMF retouched.jpg | Leonardo da Vinci | Public domain | https://commons.wikimedia.org/wiki/File:Mona_Lisa,_by_Leonardo_da_Vinci,_from_C2RMF_retouched.jpg
+picasso.jpg: File:Pablo Picasso in his Montmartre studio, 1908.jpg | Gelett Burgess | Public domain | https://commons.wikimedia.org/wiki/File:Pablo_Picasso_in_his_Montmartre_studio,_1908.jpg
+monacut.jpg: File:Mona Lisa, by Leonardo da Vinci, from C2RMF retouched.jpg | Leonardo da Vinci | Public domain | https://commons.wikimedia.org/wiki/File:Mona_Lisa,_by_Leonardo_da_Vinci,_from_C2RMF_retouched.jpg

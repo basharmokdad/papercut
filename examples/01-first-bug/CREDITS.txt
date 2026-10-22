@@ -1,0 +1,5 @@
+hopper.jpg: File:Commodore Grace M. Hopper, USN (covered) head and shoulders crop.jpg | James S. Davis | Public domain | https://commons.wikimedia.org/wiki/File:Commodore_Grace_M._Hopper,_USN_(covered)_head_and_shoulders_crop.jpg
+edison.jpg: File:Portrait of Thomas Edison. (409fa731e3364ed99012ccedfdce3e28).jpg | Unknown authorUnknown author | Public domain | https://commons.wikimedia.org/wiki/File:Portrait_of_Thomas_Edison._(409fa731e3364ed99012ccedfdce3e28).jpg
+tape.jpg: File:First Computer Bug, 1947.jpg | Courtesy of the Naval Surface Warfare Center, Dahlgren, VA., 1988. | Public domain | https://commons.wikimedia.org/wiki/File:First_Computer_Bug,_1947.jpg
+line.jpg: File:First Computer Bug, 1947.jpg | Courtesy of the Naval Surface Warfare Center, Dahlgren, VA., 1988. | Public domain | https://commons.wikimedia.org/wiki/File:First_Computer_Bug,_1947.jpg
+page.jpg: File:First Computer Bug, 1947.jpg | Courtesy of the Naval Surface Warfare Center, Dahlgren, VA., 1988. | Public domain | https://commons.wikimedia.org/wiki/File:First_Computer_Bug,_1947.jpg

@@ -1,0 +1,136 @@
+{
+ "title": "ENIAC's Six Programmers",
+ "slug": "eniac-programmers",
+ "format": "9:16",
+ "voice": "af_heart",
+ "music": "bed",
+ "seed": 44,
+ "images": {
+  "room": {
+   "commons": "File:Classic shot of the ENIAC.jpg",
+   "cut": false,
+   "accent": "red",
+   "size": 1000
+  },
+  "two": {
+   "commons": "File:Two women operating ENIAC (full resolution).jpg",
+   "cut": false,
+   "accent": "mustard",
+   "size": 1100
+  },
+  "snyder": {
+   "commons": "File:Glen Beck and Betty Snyder program the ENIAC in building 328 at the Ballistic Research Laboratory.jpg",
+   "cut": false,
+   "accent": "teal",
+   "size": 1000
+  },
+  "jennings": {
+   "commons": "File:Betty Jennings (Mrs. Bartik).jpg",
+   "cut": false,
+   "accent": "mustard",
+   "crop": [
+    0.0,
+    0.0,
+    1.0,
+    0.62
+   ],
+   "size": 1000
+  }
+ },
+ "beats": [
+  {
+   "say": "February 1946. Philadelphia.",
+   "kind": "photo",
+   "bg": "mustard",
+   "photo": "room",
+   "label": "02.1946"
+  },
+  {
+   "say": "The US Army shows off ENIAC, a computer that weighs thirty tons.",
+   "kind": "number",
+   "bg": "red",
+   "number": "30 TONS",
+   "sub": "ENIAC"
+  },
+  {
+   "say": "Newspapers call it a giant brain.",
+   "kind": "document",
+   "bg": "newsprint",
+   "head": "THE PRESS",
+   "lines": [
+    "\"GIANT BRAIN\"",
+    "ARMY UNVEILS",
+    "ELECTRONIC COMPUTER"
+   ],
+   "mark": 0
+  },
+  {
+   "say": "But six women had programmed it, with no manuals, using cables and switches.",
+   "kind": "photo",
+   "bg": "teal",
+   "photo": "two",
+   "label": "SIX PROGRAMMERS",
+   "label_size": 90
+  },
+  {
+   "say": "Kay McNulty, Jean Jennings, Betty Snyder, Marlyn Wescoff, Fran Bilas and Ruth Lichterman.",
+   "kind": "document",
+   "bg": "mustard",
+   "head": "THE TEAM",
+   "lines": [
+    "KAY McNULTY",
+    "JEAN JENNINGS",
+    "BETTY SNYDER",
+    "MARLYN WESCOFF",
+    "FRAN BILAS",
+    "RUTH LICHTERMAN"
+   ]
+  },
+  {
+   "say": "At the big demonstration, none of them were introduced.",
+   "kind": "photo",
+   "bg": "red",
+   "tag": "JEAN JENNINGS",
+   "stamp": "NOT INTRODUCED",
+   "stamp_size": 76,
+   "stamp_on": "introduced",
+   "photo": "jennings"
+  },
+  {
+   "say": "Decades later, a researcher was told they were just models posing with the machine.",
+   "kind": "photo",
+   "bg": "navy",
+   "photo": "snyder",
+   "stamp": "MODELS?",
+   "tag": "BETTY SNYDER AT THE ENIAC"
+  },
+  {
+   "say": "Their names stayed almost unknown for half a century.",
+   "kind": "timeline",
+   "bg": "kraft",
+   "dates": [
+    "1946",
+    "1970",
+    "1997"
+   ],
+   "active": 2,
+   "label": "50 YEARS"
+  },
+  {
+   "say": "In 1997, all six entered the Women in Technology Hall of Fame.",
+   "kind": "number",
+   "bg": "teal",
+   "number": "1997",
+   "sub": "HALL OF FAME"
+  },
+  {
+   "say": "Every programmer today works in a job they helped invent.",
+   "kind": "photo",
+   "bg": "red",
+   "label": "THE FIRST PROGRAMMERS",
+   "label_size": 76,
+   "burst": true,
+   "photo": "two"
+  }
+ ]
+}

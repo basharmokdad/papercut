@@ -1,0 +1,9 @@
+kokoro-onnx>=0.4
+soundfile
+faster-whisper>=1.0
+rembg[cpu]>=2.0
+opencv-python-headless
+pillow
+numpy
+scipy
+requests

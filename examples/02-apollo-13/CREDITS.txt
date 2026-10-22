@@ -1,0 +1,6 @@
+sm.jpg: File:Apollo 13 SM.jpg | NASA Astronaut (either James A. Lovell, John L. Swigert, or Fred W. Haise) | Public domain | https://commons.wikimedia.org/wiki/File:Apollo_13_SM.jpg
+crew.jpg: File:Apollo 13 Prime Crew.jpg | NASA | Public domain | https://commons.wikimedia.org/wiki/File:Apollo_13_Prime_Crew.jpg
+swigert.jpg: File:Jack Swigert.jpg | NASA | Public domain | https://commons.wikimedia.org/wiki/File:Jack_Swigert.jpg
+lm.jpg: File:Apollo 13 Lunar Module after separation from CSM (AS13-59-8562).jpg | NASA | Public domain | https://commons.wikimedia.org/wiki/File:Apollo_13_Lunar_Module_after_separation_from_CSM_(AS13-59-8562).jpg
+mailbox.jpg: File:Apollo 13 Mailbox at Mission Control.jpg | NASA | Public domain | https://commons.wikimedia.org/wiki/File:Apollo_13_Mailbox_at_Mission_Control.jpg
+splash.jpg: File:Apollo13 splashdown.jpg | NASA | Public domain | https://commons.wikimedia.org/wiki/File:Apollo13_splashdown.jpg

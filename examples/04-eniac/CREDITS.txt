@@ -1,0 +1,4 @@
+room.jpg: File:Classic shot of the ENIAC.jpg | Unidentified U.S. Army photographer | Public domain | https://commons.wikimedia.org/wiki/File:Classic_shot_of_the_ENIAC.jpg
+two.jpg: File:Two women operating ENIAC (full resolution).jpg | Unidentified U.S. Army photographer | Public domain | https://commons.wikimedia.org/wiki/File:Two_women_operating_ENIAC_(full_resolution).jpg
+snyder.jpg: File:Glen Beck and Betty Snyder program the ENIAC in building 328 at the Ballistic Research Laboratory.jpg | Unknown authorUnknown author | Public domain | https://commons.wikimedia.org/wiki/File:Glen_Beck_and_Betty_Snyder_program_the_ENIAC_in_building_328_at_the_Ballistic_Research_Laboratory.jpg
+jennings.jpg: File:Betty Jennings (Mrs. Bartik).jpg | Unidentified U.S. Army photographer | Public domain | https://commons.wikimedia.org/wiki/File:Betty_Jennings_(Mrs._Bartik).jpg
