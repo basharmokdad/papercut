@@ -189,6 +189,7 @@ class Film:
         self.W, self.H = (1080, 1920) if fmt == "9:16" else (1920, 1080)
         self.v = fmt == "9:16"
         self.b = B(self.W, self.H, story.get("seed", 11))
+        self.press_tag = "_%d" % stable(story.get("title", "") + "|".join(bt.get("say", "") for bt in story["beats"]))
         self.cap_y = 1520 if self.v else 900
         # content box (kept clear of captions and platform UI)
         self.box = (60, 230, self.W - 60, 1460) if self.v else (120, 90, self.W - 120, 840)
@@ -853,8 +854,9 @@ class Film:
             inside = (f'<img src="{self.img[what]}" style="position:absolute;left:0;top:0;width:100%;height:100%;'
                       f'object-fit:cover">')
         else:
-            self.need_band.add(what)
-            fill = f"background:url(assets/paper/band_{what}.jpg) center/cover;"
+            tag = self.press_tag if what.startswith("press") else ""
+            self.need_band.add((what, tag))
+            fill = f"background:url(assets/paper/band_{what}{tag}.jpg) center/cover;"
         if what == "sky":
             self.use_clouds = True
             for j in range(3):
@@ -898,7 +900,7 @@ class Film:
         fn = "AbrilFatface-Regular.ttf" if fat else "Anton-Regular.ttf"
         widest = max(text_ratio(fn, ln.upper()) for ln in lines)
         size = min(beat.get("headline_size", 150), (self.W - 210) / max(0.1, widest))
-        step = size * 1.13
+        step = max(size * 1.13, size + 30)
         total = step * len(lines)
         at = beat.get("headline_at", "low")
         top = {"low": self.cap_y - 60 - total, "top": y0 + 10, "mid": (y0 + y1) / 2 - total / 2}.get(at, at if isinstance(at, (int, float)) else y0)
@@ -910,7 +912,7 @@ class Film:
             z1 = max(z1, z0 + 120)
             if total > z1 - z0:
                 step = (z1 - z0) / len(lines)
-                size = step / 1.13
+                size = min(step / 1.13, step - 30)
                 total = step * len(lines)
             top = z0 + (z1 - z0 - total) * 0.35
         cyc = beat.get("headline_colors") or [c for c in ("mustard", "", "ink", "red") if c != self.cur_bg and not (c == "" and self.cur_bg in ("cream", "newsprint"))]
@@ -949,7 +951,8 @@ class Film:
         if beat.get("letters_kicker"):
             # a small condensed line riding on the giant word: the size contrast is the design
             ks = beat.get("kicker_size", max(54, size * 0.2))
-            ki = self.el(f'<div class="kick" style="font-size:{ks:.0f}px;color:{col}">{beat["letters_kicker"]}</div>',
+            kshade = INK if self.dark else "rgba(239,232,218,.85)"
+            ki = self.el(f'<div class="kick" style="font-size:{ks:.0f}px;color:{col};text-shadow:3px 4px 0 {kshade}">{beat["letters_kicker"]}</div>',
                          x + 6, y - ks * 0.2, text_ratio("Anton-Regular.ttf", beat["letters_kicker"].upper()) * ks + 40, 33)
             fresh.append((ki, dict(how="print", rot=b.r(-1.5, 1.5)), ta - 0.3))
             y += ks * 0.62
@@ -1082,8 +1085,9 @@ class Film:
             s_start = (max(0.0, t0 - (0.06 if trans == "cut" else 0.3))) if k else 0.0
             s_end = min(total, nxt + 0.05) if k + 1 < len(beats) else total
             bg = beat.get("bg", ["mustard", "red", "teal", "newsprint", "kraft", "navy"][k % 6])
-            bgf = f"assets/paper/bg_{bg}_{k % 3}.jpg"
-            self.need_bg.add((bg, k % 3))
+            tag = self.press_tag if bg.startswith("press") else ""
+            bgf = f"assets/paper/bg_{bg}_{k % 3}{tag}.jpg"
+            self.need_bg.add((bg, k % 3, tag))
             self.cur_bg = bg
             self.bgs.append(bg)
             self.scene_end = s_end
@@ -1191,12 +1195,12 @@ def write_project(story, timing, words, total, proj, images):
     pd = os.path.join(proj, "assets", "paper")
     os.makedirs(pd, exist_ok=True)
     said = [bt.get("say", "") for bt in story["beats"]]
-    for bg, v in f.need_bg:
-        p = os.path.join(pd, f"bg_{bg}_{v}.jpg")
+    for bg, v, tag in f.need_bg:
+        p = os.path.join(pd, f"bg_{bg}_{v}{tag}.jpg")
         if not os.path.exists(p):
             make_world(bg, W, H, seed=stable(bg) + v, title=story.get("title", ""), lines=said).save(p, quality=90)
-    for name in f.need_band:
-        p = os.path.join(pd, f"band_{name}.jpg")
+    for name, tag in f.need_band:
+        p = os.path.join(pd, f"band_{name}{tag}.jpg")
         if not os.path.exists(p):
             make_world(name, W + 160, int(H * 0.5), seed=stable(name) + 5, title=story.get("title", ""), lines=said).save(p, quality=90)
     if f.use_clouds:

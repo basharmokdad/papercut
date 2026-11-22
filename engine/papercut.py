@@ -2,9 +2,9 @@
 
   python papercut.py search "Apollo 13" sheet.png      find public-domain photos (prints + contact sheet)
   python papercut.py make story.json                   images -> cutouts -> voice -> timings -> animation -> sound
-  python papercut.py make story.json --render          ...and render the MP4
-  python papercut.py snap story.json 3.2,7.5           stills at those seconds, to check a frame before rendering
-  python papercut.py sheet story.json                  one still near the end of every beat, tiled into snaps/contact-sheet.jpg
+  python papercut.py make story.json --render          ...and render the MP4 (add --check for HyperFrames' lint only)
+  python papercut.py sheet story.json                  one still near the end of every beat -> snaps/ (+ contact-sheet-N.jpg)
+  python papercut.py snap story.json 3.2,7.5           stills at those seconds -> snaps-at/ (the sheet's stills are kept)
 """
 import hashlib
 import json
@@ -57,7 +57,9 @@ def images(story, root, proj):
             ext = ".jpg" if ext in (".tif", ".tiff", ".webp", ".svg") else ext
             raw = os.path.join(src_dir, key + ext)
             if not os.path.exists(raw):
-                fetch.get(spec["commons"], raw, credits=credits, allow_by=spec.get("allow_by", False))
+                # "px": how wide to download (Wikimedia serves 1280 / 1920 / 2560 / 3840). Ask for more when a photo
+                # is cropped hard or printed full frame.
+                fetch.get(spec["commons"], raw, credits=credits, allow_by=spec.get("allow_by", False), width=spec.get("px", 1920))
         params = {k: spec.get(k) for k in ("cut", "accent", "size", "contrast", "crop", "dots", "cell", "color")} | {"v": 2}
         tag = _h([params, os.path.getsize(raw)])
         out = os.path.join(out_dir, f"{key}-{tag}.png")
@@ -112,7 +114,7 @@ def narrate(story, proj):
     else:
         vo, timing, total = voice.synth(story["beats"], ad, story.get("voice", "af_heart"), story.get("speed", 1.0),
                                         lang=story.get("lang", "en-us"))
-    words = voice.words(vo, story["beats"], timing)
+    words = voice.words(vo, story["beats"], timing, lang=story.get("lang", "en-us")[:2])
     json.dump({"key": key, "timing": timing, "words": words, "total": total}, open(cache, "w"), indent=1)
     print(f"  voice {total:.1f}s, {len(timing)} beats")
     return timing, words, total
@@ -170,22 +172,32 @@ def mix(story, proj, events, total, timing=None):
                     out[s:e] += x[: e - s] * g * story.get("sfx_gain", 0.5)
     raw = os.path.join(ad, "mix_raw.wav")
     sf.write(raw, out / (np.max(np.abs(out)) or 1) * 0.7, sfx.SR)
-    # two-pass, linear loudness: one static gain, so the voice is never pumped up and down
+    # One static gain to the target loudness, then a limiter for the few peaks that would clip. No gain riding, so
+    # the voice is never pumped up and down. A second pass corrects the little the limiter took off.
     target = story.get("lufs", -14)
-    r = subprocess.run(["ffmpeg", "-v", "info", "-i", raw, "-af", f"loudnorm=I={target}:TP=-1.5:LRA=11:print_format=json",
-                        "-f", "null", "-"], capture_output=True, text=True, encoding="utf-8", errors="replace")
+    final = os.path.join(ad, "mix.wav")
+    gain = target - (_lufs(raw) or target)
+    for _ in range(3):
+        subprocess.run(["ffmpeg", "-y", "-v", "error", "-i", raw, "-af", f"volume={gain:.2f}dB,alimiter=limit=0.84:level=0",
+                        "-ar", "48000", final], check=True)
+        got = _lufs(final)
+        if got is None or abs(got - target) < 0.3:
+            break
+        gain += target - got
+
+
+def _lufs(path):
+    """Integrated loudness of a file (EBU R128), or None if ffmpeg could not read it."""
+    r = subprocess.run(["ffmpeg", "-hide_banner", "-nostats", "-i", path, "-af", "ebur128", "-f", "null", "-"],
+                       capture_output=True, text=True, encoding="utf-8", errors="replace")
+    vals = [ln.split()[1] for ln in r.stderr.splitlines() if ln.strip().startswith("I:") and "LUFS" in ln]
     try:
-        js = json.loads(r.stderr[r.stderr.rindex("{"): r.stderr.rindex("}") + 1])
-        af = (f"loudnorm=I={target}:TP=-1.5:LRA=11:measured_I={js['input_i']}:measured_TP={js['input_tp']}:"
-              f"measured_LRA={js['input_lra']}:measured_thresh={js['input_thresh']}:offset={js['target_offset']}:linear=true,"
-              "alimiter=limit=0.84:level=0")
-    except (ValueError, KeyError):
-        af = f"loudnorm=I={target}:TP=-1.5:LRA=11,alimiter=limit=0.84:level=0"
-    subprocess.run(["ffmpeg", "-y", "-v", "error", "-i", raw, "-af", af, "-ar", "48000",
-                    os.path.join(ad, "mix.wav")], check=True)
+        return float(vals[-1])
+    except (IndexError, ValueError):
+        return None
 
 
-def make(path, render=False):
+def make(path, render=False, check=False):
     story, root, proj = load(path)
     os.makedirs(proj, exist_ok=True)
     print("images")
@@ -196,15 +208,25 @@ def make(path, render=False):
     events = build.write_project(story, timing, words, total, proj, imgs)
     print("sound")
     mix(story, proj, events, total, timing)
-    r = subprocess.run([NPX, "hyperframes", "check", proj], capture_output=True, text=True, encoding="utf-8", errors="replace")
-    errs = [ln.strip() for ln in (r.stdout + r.stderr).splitlines() if ln.strip().startswith("✗")]
-    print(f"check: {len(errs)} errors")
-    for e in errs[:10]:
-        print("  ", e[:220])
+    if check or render:
+        # HyperFrames' own lint. "text_occluded" fires for every piece that has not entered yet and for the light
+        # layer, so it is counted apart: anything else is a real problem.
+        r = subprocess.run([NPX, "hyperframes", "check", proj], capture_output=True, text=True, encoding="utf-8", errors="replace")
+        errs = [ln.strip() for ln in (r.stdout + r.stderr).splitlines() if ln.strip().startswith("✗")]
+        real = [e for e in errs if "text_occluded" not in e]
+        print(f"check: {len(real)} errors ({len(errs) - len(real)} known false alarms hidden)")
+        for e in real[:20]:
+            print("  ", e[:220])
     if render:
         out = os.path.join(root, story.get("slug", "video") + ".mp4")
         subprocess.run([NPX, "hyperframes", "render", proj, "-o", out, "-q", "delivery", "--quiet"], check=True)
-        print("rendered", out)
+        # the renderer re-levels the sound (about 3 dB hot), so the finished mix is laid back in untouched
+        tmp = out + ".a.mp4"
+        subprocess.run(["ffmpeg", "-y", "-v", "error", "-i", out, "-i", os.path.join(proj, "assets", "audio", "mix.wav"),
+                        "-map", "0:v", "-map", "1:a", "-c:v", "copy", "-c:a", "aac", "-b:a", "256k", "-shortest",
+                        "-movflags", "+faststart", tmp], check=True)
+        os.replace(tmp, out)
+        print("rendered", out, f"({_lufs(out)} LUFS)")
     return proj
 
 
@@ -212,14 +234,15 @@ if __name__ == "__main__":
     sys.stdout.reconfigure(encoding="utf-8")
     cmd = sys.argv[1]
     if cmd == "make":
-        make(sys.argv[2], render="--render" in sys.argv)
+        make(sys.argv[2], render="--render" in sys.argv, check="--check" in sys.argv)
     elif cmd == "search":
         c = fetch.search(sys.argv[2], allow_by="--allow-by" in sys.argv)
         for i, x in enumerate(c, 1):
             print(f"{i:2d}. {x['title']}  [{x['license']}]  {x['w']}x{x['h']}")
         if len(sys.argv) > 3 and not sys.argv[3].startswith("--"):
             fetch.contact_sheet(c, sys.argv[3])
-            print("sheet:", sys.argv[3])
+            if c:
+                print("sheet:", sys.argv[3])
     elif cmd == "sheet":
         story, root, proj = load(sys.argv[2])
         c = json.load(open(os.path.join(proj, "assets", "audio", "timing.json")))
@@ -234,6 +257,6 @@ if __name__ == "__main__":
         print(out)
     elif cmd == "snap":
         story, root, proj = load(sys.argv[2])
-        out = os.path.join(root, "snaps")
+        out = os.path.join(root, "snaps-at")  # its own folder: a quick check must not wipe the per-beat sheet
         subprocess.run([NPX, "hyperframes", "snapshot", proj, "--at", sys.argv[3], "-o", out, "--no-end"], check=True)
         print(out)

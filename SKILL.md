@@ -64,8 +64,9 @@ Search the topic. Every date, name and number in the script needs two independen
 ### 2. Script (beats)
 
 - 10-14 beats, 30-45 s. One sentence (or half of one) per beat, one visual idea per beat.
+- Word budget: about 105-115 words lands at 40-44 s with a natural take (VoxCPM or a person). The built-in Kokoro voice reads the same script about 15% slower, so do not judge the length on a Kokoro draft.
 - Cold open on a date and a place: "September ninth, 1947. Harvard University."
-- Calm documentary voice, short declaratives. Spell numbers the way they should be spoken ("Seventy-nine years later").
+- Calm documentary voice, short declaratives. Spell numbers the way they should be spoken ("Seventy-nine years later"); the timing copes with either spelling.
 - End on a short line that lands: "After it, it was." / "We are still debugging."
 - While writing each line, decide which 2-4 words of it go on screen. That is the beat's `headline`, `lines` or `letters`.
 
@@ -87,9 +88,9 @@ Open `sheet.png` and pick by looking, not by title. Rules learned the hard way:
 
 ```json
 {
-  "title": "Apollo 13", "slug": "apollo-13", "format": "9:16", "voice": "af_heart", "music": "bed", "seed": 21,
+  "title": "Apollo 13", "slug": "apollo-13", "format": "9:16", "voice": "af_heart", "music": "investigations", "seed": 21,
   "images": {
-    "swigert": {"commons": "File:Jack Swigert.jpg", "cut": true, "accent": "red", "size": 1400, "cell": 8},
+    "swigert": {"commons": "File:Jack Swigert.jpg", "cut": true, "accent": "red", "size": 1400},
     "sm":      {"commons": "File:Apollo 13 SM.jpg", "cut": false, "accent": "red", "size": 1100}
   },
   "beats": [
@@ -104,7 +105,7 @@ Open `sheet.png` and pick by looking, not by title. Rules learned the hard way:
 }
 ```
 
-Image keys: `commons` (exact `File:` title) or `file` (local path), `cut`, `color`, `dots`, `crop`, `accent` (red, mustard, teal, null), `size`, `cell` (dot size when `dots` is on), `contrast`.
+Image keys: `commons` (exact `File:` title) or `file` (local path), `px` (download width: 1920 default, 2560 or 3840 for a photo you crop hard or print full frame), `cut`, `color`, `dots`, `crop`, `accent` (red, mustard, teal, null), `size`, `cell` (dot size when `dots` is on), `contrast`.
 
 Story keys for sound and look: `voice` (a Kokoro voice) or `voice_file` (one recorded take of the whole script, read in order; any voice works, and it is timed by Whisper), `music` (`investigations` default, `sneaky-snitch`, `dark-fog`, `none`, `bed` for the old synthesised pad, or a path to your own track), `music_gain`, `duck_db`, `sfx_gain`, `foley` (`v1` for the old synthesised set), `light`, `light_strength`, `folds`, `motion_blur`, `ink`.
 
@@ -140,7 +141,33 @@ Story keys for sound and look: `voice` (a Kokoro voice) or `voice_file` (one rec
 | `drop` | `true`: the music stops for a breath before this beat and comes back on a low hit. One or two per film |
 | `transition` | how this scene arrives: `whip-left`, `whip-right`, `whip-up`, `whip-down` (default cycle), `cut`, or the old paper slide-ins `right`, `left`, `up`, `down`, `drop` |
 
-`at` and `to` are fractions of the frame: `[0.5, 0.5]` is the centre. Keep notes between y 0.66 and 0.74 on a 9:16 frame: below the photo, above the captions.
+`at` and `to` are fractions of the frame: `[0.5, 0.5]` is the centre; a note's `at` is the centre of its text. On a `photo` beat keep notes between y 0.66 and 0.74 (below the photo, above the captions); on other kinds put them wherever there is clear paper, and check the still.
+
+**Placement keys** (use them when a still shows a clash; every one is optional):
+
+| key | on | what it does |
+|---|---|---|
+| `hero_y`, `hero_x` | hero, kinetic, board | centre of the subject in pixels / a sideways nudge |
+| `hero_h`, `hero_top` | hero | height of the box in pixels / where a full-frame subject's top sits (fraction of the frame, default 0.33) |
+| `headline_at`, `letters_at` | any | `low`, `top`, `mid`, or a number: the y in pixels of the first strip / the word |
+| `headline_size`, `letters_size`, `label_size`, `stamp_size`, `kicker_size` | any | type size in pixels (they are shrunk to fit the width anyway) |
+| `text_y`, `size` | kinetic | top of the text block / base type size |
+| `band_y`, `band_h`, `band_rot` | band | position, height (fractions) and tilt of the strip |
+| `clouds`, `moon` | any | number of clouds (0 to remove them) / `true` or `[x, y, size]` |
+| `doc_y`, `number_y`, `line_y`, `map_y` | document, number, timeline, map | where that piece sits |
+| `bend`, `rot`, `size`, `color` | each note | curve of the arrow, tilt, type size, ink |
+
+**Traps other people hit:**
+
+- **A wide photo as a full-frame hero.** `"size": "full"` is for a tall subject (a person, a rocket). A landscape photo gets its sides cropped and sits low; use `photo`, or a `band` with the image key, or set `hero_y` / `hero_x` and a numeric `headline_at`.
+- **Headline on a tight portrait.** If the face fills the cut-out, the default strips have no chest to sit on and shrink. Use `"headline_at": "top"`, or raise `face` (0.48 = the face ends just under halfway down).
+- **Short strips.** Keep each headline line to about 14 characters; long lines become small type.
+- **Boards.** Pins go in at the top of each photo and the string runs from there to the middle. Use uncut prints (`cut: false`) with some headroom, not cut-out heads: a pin in a forehead looks wrong.
+- **Machines on a plain background.** Still `cut: false`. The cut-out keeps slabs of the backdrop.
+- **Kinetic beats show no bottom captions** (the words are already the picture). Add `"cap": true` if the lines are a shortened version of the sentence and the full words matter.
+- **A `document` with a `hero`** drops a small photo over the top-right of the sheet: keep the typed lines short there.
+- **The `press` worlds print your title and script** as a newspaper behind the scene, so they change when the script changes. That is real text on screen: check it reads as texture, not as a spoiler.
+- **Kickers and giant letters over `sky`.** Clouds are cream; cream type on them is weak. Use `"clouds": 0` on that beat or a `letters_color`.
 `stamp_on`, `letters_on` and `on` take a word from `say`; the piece lands when that word is spoken.
 Labels: 1-3 words, uppercase. `label_size` shrinks long ones; `|` breaks a line.
 A `kinetic` beat's `lines` may be a shorter version of the sentence ("MOON LANDING / IS OFF. / GET THREE / MEN HOME"); words that are in `say` land on time. `em` lists the words (exactly as written in `lines`, any case) that are set in the italic serif.
@@ -156,11 +183,10 @@ Captions: `"captions": "build"` (default: every word is its own paper chip and l
 
 1. Open `pieces.jpg`: every cut-out on one sheet. A blob or a missing face means re-crop, raise `contrast`, or switch to `cut: false`.
 2. Open every `snaps/frame-*.png` (or `snaps/contact-sheet-*.jpg`). Check each beat against the five rules, and: no face under a strip, no note under the captions or across a label, every stamp readable, nothing important in the bottom 300 px of a 9:16 frame.
-3. For one moment in a beat: `<python> <skill>/engine/papercut.py snap story.json 2.1,5.4`.
+3. For one moment in a beat: `<python> <skill>/engine/papercut.py snap story.json 2.1,5.4` (stills go to `snaps-at/`; beat times are in `project/assets/audio/timing.json`).
 4. Fix story.json and run `make` again (cut-outs and voice are cached, only what changed is rebuilt).
-5. `<python> <skill>/engine/papercut.py make story.json --render` writes `<slug>.mp4` (1080x1920, 30 fps, -14 LUFS).
-
-`make` prints `text_occluded` lines for pieces that have not entered yet at the checked instant. Those are not errors; the stills are the check.
+5. `<python> <skill>/engine/papercut.py make story.json --render` writes `<slug>.mp4` (1080x1920, 30 fps, -14 LUFS) and prints the loudness it measured. It also runs HyperFrames' lint and prints only real errors.
+6. Pull a dozen frames out of the finished MP4 and look once more; check the frame at 0.3 s already shows a picture.
 
 Credits for every photo are written to `CREDITS.txt`. Put them in the video description.
 
@@ -179,7 +205,7 @@ Credits for every photo are written to `CREDITS.txt`. Put them in the video desc
 The built-in voice is Kokoro (`af_heart` default, also `af_bella`, `bf_emma`, `am_michael`, `bm_george`): fast, free, on the CPU, but it sounds synthetic. For a film people will watch, bring a real take:
 
 - **Your own voice:** record the whole script once, in order, and set `"voice_file": "my-take.wav"`.
-- **A free natural voice:** `tools/voxcpm_take.py story.json voice/` makes three takes with VoxCPM2 (Apache-2.0, runs on your own GPU, the voice is described in plain words). Pick one by ear and set it as `voice_file`.
+- **A free natural voice:** `tools/voxcpm_take.py story.json voice/` makes three takes with VoxCPM2 (Apache-2.0, runs on your own GPU, the voice is described in plain words). Pick one by ear, or if you cannot listen run `<python> <skill>/tools/score_takes.py story.json voice/take_*.wav`: take the one that has every word, the longest pause between beats and a quiet ending. Set it as `voice_file`.
 - **Any voice tool you already pay for** works the same way: export one take, set `voice_file`.
 
 papercut times every beat, caption and headline to the take with Whisper, so any language Whisper understands works.

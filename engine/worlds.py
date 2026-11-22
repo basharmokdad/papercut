@@ -211,7 +211,7 @@ def press(w, h, title="", lines=(), dark=False, seed=0):
     d.line([(m, y), (W - m, y)], fill=ink + (a_head,), width=3)
     y = columns(y + 20, int(H * 0.50), 0)
     d.line([(m, y), (W - m, y)], fill=ink + (a_head,), width=5)
-    second = (lines[-1] if lines else title).upper().rstrip(".")
+    second = (lines[0] if lines else title).upper().rstrip(".")
     y = headline(y + 14, second, W / 14)
     d.line([(m, y), (W - m, y)], fill=ink + (a_head,), width=3)
     columns(y + 20, H - int(H * 0.02), 1)

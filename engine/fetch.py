@@ -57,29 +57,51 @@ def search(query, limit=24, allow_by=False):
     return out
 
 
+def _curl(url, out, tries=4):
+    """Download with curl: Wikimedia's edge rate-limits python's HTTP fingerprint on upload.wikimedia.org."""
+    import subprocess
+    code = "000"
+    for i in range(tries):
+        code = subprocess.run(["curl", "-s", "-L", "-o", out, "-w", "%{http_code}", "-A", UA["User-Agent"], url],
+                              capture_output=True, text=True).stdout.strip()
+        if code == "200":
+            return True
+        time.sleep(4 * (i + 1) if code == "429" else 1.5)
+    return False
+
+
 def contact_sheet(cands, path, cols=4, tw=300):
+    """Every candidate on one sheet, numbered, so the pick is made by looking. A thumbnail that will not download
+    still gets its numbered cell (marked), so the numbers always match the printed list."""
+    if not cands:
+        print("no free-to-use results: try other words, or --allow-by for CC BY")
+        return
+    import tempfile
     font = ImageFont.load_default()
     rows = (len(cands) + cols - 1) // cols
     sheet = Image.new("RGB", (cols * tw, rows * (tw + 40)), (30, 30, 30))
+    d = ImageDraw.Draw(sheet)
+    tmp = os.path.join(tempfile.gettempdir(), "papercut_thumb.bin")
     for i, c in enumerate(cands):
-        try:
-            r = requests.get(c["thumb"].replace("/1600px-", "/400px-"), headers=UA, timeout=30)
-            from io import BytesIO
-            im = Image.open(BytesIO(r.content)).convert("RGB")
-            im.thumbnail((tw - 8, tw - 8))
-        except Exception:
-            continue
         x, y = (i % cols) * tw, (i // cols) * (tw + 40)
-        sheet.paste(im, (x + 4, y + 4))
-        d = ImageDraw.Draw(sheet)
+        try:
+            if not _curl(c["thumb"].split("?")[0].replace("/1600px-", "/500px-"), tmp, tries=3):
+                raise OSError("thumbnail refused")
+            im = Image.open(tmp).convert("RGB")
+            im.thumbnail((tw - 8, tw - 8))
+            sheet.paste(im, (x + 4, y + 4))
+        except Exception:
+            d.rectangle([x + 4, y + 4, x + tw - 4, y + tw - 4], outline=(120, 60, 60))
+            d.text((x + 16, y + tw // 2), "preview failed, open the page:", fill=(200, 120, 120), font=font)
         d.text((x + 6, y + tw + 2), f"{i + 1}. {c['title'][5:40]}", fill=(255, 255, 255), font=font)
         d.text((x + 6, y + tw + 18), f"{c['license'][:30]}  {c['w']}x{c['h']}", fill=(180, 180, 180), font=font)
+        time.sleep(0.25)
     sheet.save(path)
 
 
-def get(title, out, credits="CREDITS.txt", allow_by=False):
+def get(title, out, credits="CREDITS.txt", allow_by=False, width=1920):
     data = _get({"action": "query", "format": "json", "titles": title, "prop": "imageinfo",
-                 "iiprop": "url|extmetadata", "iiurlwidth": 1280})  # 1280 is a standard Wikimedia thumb step
+                 "iiprop": "url|extmetadata", "iiurlwidth": int(width)})  # 1280 / 1920 / 2560 / 3840 are standard steps
     page = next(iter(data["query"]["pages"].values()))
     ii = page["imageinfo"][0]
     md = ii.get("extmetadata", {})
@@ -88,18 +110,11 @@ def get(title, out, credits="CREDITS.txt", allow_by=False):
         raise SystemExit(f"refused: {title} is '{lic}', not public domain/CC0 (use --allow-by for CC BY)")
     url = (ii.get("thumburl") or ii["url"]).split("?")[0]  # tracking params get rate-limited
     os.makedirs(os.path.dirname(out) or ".", exist_ok=True)
-    # curl, not requests: Wikimedia's edge rate-limits python's HTTP fingerprint on upload.wikimedia.org
-    import subprocess
-    for i in range(5):
-        code = subprocess.run(["curl", "-s", "-L", "-o", out, "-w", "%{http_code}", "-A", UA["User-Agent"], url],
-                              capture_output=True, text=True).stdout.strip()
-        if code == "200":
-            break
-        time.sleep(5 * (i + 1))
-    if code != "200":
-        raise SystemExit(f"download failed ({code}): {url}")
+    if not _curl(url, out, tries=5):
+        raise SystemExit(f"download failed: {url}")
     time.sleep(1.0)
-    artist = _clean(md.get("Artist", {}).get("value"))[:120]
+    import html
+    artist = html.unescape(_clean(md.get("Artist", {}).get("value")))[:120]
     line = f"{os.path.basename(out)}: {title} | {artist or 'unknown'} | {lic} | {ii.get('descriptionurl')}\n"
     existing = open(credits, encoding="utf-8").read() if os.path.exists(credits) else ""
     if line not in existing:
