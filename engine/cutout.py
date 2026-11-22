@@ -80,9 +80,39 @@ def _scissor_poly(mask, grow, seed, eps=5.0):
     return out * 255
 
 
+def _print_tone(img, m, contrast, seed, color=False):
+    """A clean printed photograph: gentle tone curve, fine film grain, ink that is never pure black.
+
+    This is the default look. Coarse halftone dots destroy busy or dark photos (faces in a crowd, rooms,
+    machines), so dots are now opt-in."""
+    rng = np.random.default_rng(seed)
+    if color:
+        rgb = np.asarray(img, np.float32) / 255
+        lum = rgb.mean(axis=2, keepdims=True)
+        rgb = lum + (rgb - lum) * 0.82                       # a little faded, like an old colour print
+        rgb = np.clip(0.5 + (rgb - 0.5) * (0.92 + 0.15 * (contrast - 1)), 0, 1)
+        rgb = 0.06 + rgb * 0.9
+        grain = rng.normal(0, 0.028, rgb.shape[:2])[..., None]
+        return np.clip(rgb + grain, 0, 1)                      # H x W x 3
+    g = ImageOps.grayscale(img)
+    g = ImageOps.autocontrast(g, cutoff=1, mask=Image.fromarray(m))
+    g = g.filter(ImageFilter.UnsharpMask(radius=2, percent=70, threshold=2))
+    ga = np.asarray(g, np.float32) / 255
+    # soft S-curve around the middle, then lift the deepest shadow so dark photos keep their detail
+    ga = np.clip(0.5 + (ga - 0.5) * (1.0 + 0.6 * (contrast - 1.0)), 0, 1)
+    ga = ga + 0.10 * np.sin(np.pi * ga) * (ga - 0.5)
+    ga = 0.08 + ga * 0.9
+    grain = rng.normal(0, 0.032, ga.shape)
+    grain = np.asarray(Image.fromarray(((grain + 0.5) * 255).clip(0, 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(0.6)), np.float32) / 255 - 0.5
+    return np.clip(ga + grain * 0.9, 0, 1)                     # H x W, 1 = paper
+
+
 def cut_piece(src, size=900, cut=True, accent="red", border=14, seed=1, contrast=1.1, cell=None,
-              offset=(16, 12), paper=PAPER, dots=True):
-    """Return an RGBA PIL image of the finished paper piece (shadow included)."""
+              offset=(16, 12), paper=PAPER, dots=False, color=False):
+    """Return an RGBA PIL image of the finished paper piece (shadow included).
+
+    dots=False (default): a clean printed photo with fine grain. dots=True: halftone dots (fine by default,
+    `cell` sets the dot size). color=True keeps the photo's own colours, slightly faded."""
     img = Image.open(src).convert("RGB")
     img = ImageOps.exif_transpose(img)
     s = size / max(img.size)
@@ -94,22 +124,23 @@ def cut_piece(src, size=900, cut=True, accent="red", border=14, seed=1, contrast
     else:
         m = np.full((h, w), 255, np.uint8)
 
-    # tone: autocontrast inside the subject, a little local contrast, then a gentle S-curve
-    g = ImageOps.grayscale(img)
-    g = ImageOps.autocontrast(g, cutoff=2, mask=Image.fromarray(m))
-    g = g.filter(ImageFilter.UnsharpMask(radius=6, percent=60, threshold=2))
-    ga = np.asarray(g, np.float32) / 255
-    ga = np.clip(0.5 + (ga - 0.5) * contrast, 0, 1)
-    ga = ga ** 0.72                      # lift the mids so faces keep detail
-    ga = 0.10 + ga * 0.90                # deepest shadow = 90% ink, never a solid black blob
-
-    cell = cell or max(6, int(round(size / 115)))
+    col = None
     if dots:
+        # tone: autocontrast inside the subject, a little local contrast, then a gentle S-curve
+        g = ImageOps.grayscale(img)
+        g = ImageOps.autocontrast(g, cutoff=2, mask=Image.fromarray(m))
+        g = g.filter(ImageFilter.UnsharpMask(radius=6, percent=60, threshold=2))
+        ga = np.asarray(g, np.float32) / 255
+        ga = np.clip(0.5 + (ga - 0.5) * contrast, 0, 1)
+        ga = ga ** 0.72                      # lift the mids so faces keep detail
+        ga = 0.10 + ga * 0.90                # deepest shadow = 90% ink, never a solid black blob
+        cell = cell or max(4, int(round(size / 200)))   # fine dots; big ones turn busy photos to mush
         ht = np.asarray(halftone(ga, m, cell=cell), np.float32) / 255  # 1 paper, 0 ink
+    elif color:
+        col = _print_tone(img, m, contrast, seed, color=True)
+        ht = None
     else:
-        # clean print for documents and handwriting: keep the detail, add a fine print grain
-        rng = np.random.default_rng(seed)
-        ht = np.clip(ga + rng.normal(0, 0.035, ga.shape), 0, 1).astype(np.float32)
+        ht = _print_tone(img, m, contrast, seed).astype(np.float32)
 
     # canvas with room for border + accent offset
     pad = border + max(abs(offset[0]), abs(offset[1])) + 8
@@ -131,9 +162,17 @@ def cut_piece(src, size=900, cut=True, accent="red", border=14, seed=1, contrast
     paper_tex = np.asarray(card(paper, W, H, seed + 3), np.float32)
     rgb = paper_tex.copy()
     ink = np.array(INK, np.float32)
-    inner = np.zeros((H, W), np.float32)
-    inner[pad:pad + h, pad:pad + w] = (m > 127) * (1 - ht)
-    rgb = rgb * (1 - inner[..., None]) + ink[None, None, :] * inner[..., None]
+    if col is not None:
+        # a colour print laid on the paper: the paper's own fibre shows through a little
+        inside = np.zeros((H, W), bool)
+        inside[pad:pad + h, pad:pad + w] = m > 127
+        photo = np.zeros((H, W, 3), np.float32)
+        photo[pad:pad + h, pad:pad + w] = col * 255
+        rgb[inside] = photo[inside] * (0.9 + 0.1 * paper_tex[inside] / 255)
+    else:
+        inner = np.zeros((H, W), np.float32)
+        inner[pad:pad + h, pad:pad + w] = (m > 127) * (1 - ht)
+        rgb = rgb * (1 - inner[..., None]) + ink[None, None, :] * inner[..., None]
 
     layers = []
     if accent:

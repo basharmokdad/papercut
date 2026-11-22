@@ -48,6 +48,49 @@ def synth(beats, out_dir, voice="af_heart", speed=1.0, lang="en-us"):
     return path, timing, len(full) / sr
 
 
+def from_take(take, beats, out_dir, model="small", lang="en"):
+    """Use any narration recording instead of Kokoro: your own voice, ElevenLabs, VoxCPM, anything.
+
+    One take of the whole script, read in order. Whisper finds every word; the script is laid onto its clock by
+    character position, so each beat starts on its own first word. Returns the same (path, timing, total) as synth."""
+    from faster_whisper import WhisperModel
+    from scipy.signal import resample_poly
+    x, sr = sf.read(take, dtype="float32")
+    if x.ndim > 1:
+        x = x.mean(1)
+    lead = 0.25
+    full = np.concatenate([np.zeros(int(lead * sr), np.float32), x, np.zeros(int(0.6 * sr), np.float32)])
+    os.makedirs(out_dir, exist_ok=True)
+    path = os.path.join(out_dir, "vo.wav")
+    sf.write(path, full, sr, subtype="PCM_16")
+    m = WhisperModel(model, device="cpu", compute_type="int8")
+    segs, _ = m.transcribe(resample_poly(full, 16000, sr).astype(np.float32), word_timestamps=True, language=lang)
+    ww = [w for s in segs for w in (s.words or [])]
+    if not ww:
+        raise SystemExit("voice_file: whisper heard no words in " + take)
+    # character clock of what whisper heard
+    xs, ts_s, ts_e, c = [], [], [], 0
+    for w in ww:
+        n = len(re.sub(r"\W", "", w.word)) or 1
+        xs.append(c)
+        ts_s.append(w.start)
+        c += n
+        ts_e.append(w.end)
+    heard = c
+    script = [len(re.sub(r"\W", "", b["say"])) or 1 for b in beats]
+    scale = heard / max(1, sum(script))
+    timing, cur = [], 0
+    for n in script:
+        a = cur * scale
+        z = (cur + n) * scale
+        s = float(np.interp(a, xs, ts_s))
+        e = float(np.interp(z - 1e-6, xs, ts_e))
+        s = max(s, lead)  # whisper often puts the first word at 0.0 even after the lead-in silence
+        timing.append({"start": round(s, 3), "dur": round(max(0.3, e - s), 3)})
+        cur += n
+    return path, timing, len(full) / sr
+
+
 def words(vo_path, beats, timing, model="small"):
     """Script tokens with start/end times, grouped per beat."""
     from faster_whisper import WhisperModel

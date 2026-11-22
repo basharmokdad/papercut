@@ -4,6 +4,7 @@
   python papercut.py make story.json                   images -> cutouts -> voice -> timings -> animation -> sound
   python papercut.py make story.json --render          ...and render the MP4
   python papercut.py snap story.json 3.2,7.5           stills at those seconds, to check a frame before rendering
+  python papercut.py sheet story.json                  one still near the end of every beat, tiled into snaps/contact-sheet.jpg
 """
 import hashlib
 import json
@@ -57,7 +58,7 @@ def images(story, root, proj):
             raw = os.path.join(src_dir, key + ext)
             if not os.path.exists(raw):
                 fetch.get(spec["commons"], raw, credits=credits, allow_by=spec.get("allow_by", False))
-        params = {k: spec.get(k) for k in ("cut", "accent", "size", "contrast", "crop", "dots")}
+        params = {k: spec.get(k) for k in ("cut", "accent", "size", "contrast", "crop", "dots", "cell", "color")} | {"v": 2}
         tag = _h([params, os.path.getsize(raw)])
         out = os.path.join(out_dir, f"{key}-{tag}.png")
         if not os.path.exists(out):
@@ -71,7 +72,7 @@ def images(story, root, proj):
                 im.save(src)
             piece = cut_piece(src, size=spec.get("size", 1000), cut=spec.get("cut", True),
                               accent=spec.get("accent", "red"), contrast=spec.get("contrast", 1.1), seed=len(key),
-                              dots=spec.get("dots", True))
+                              dots=spec.get("dots", False), cell=spec.get("cell"), color=spec.get("color", False))
             piece.save(out)
             print("  piece", key)
         done[key] = os.path.relpath(out, proj).replace("\\", "/")
@@ -96,44 +97,91 @@ def images(story, root, proj):
 def narrate(story, proj):
     ad = os.path.join(proj, "assets", "audio")
     os.makedirs(ad, exist_ok=True)
-    key = _h([[b["say"] for b in story["beats"]], story.get("voice", "af_heart"), story.get("speed", 1.0)])
+    take = story.get("voice_file")
+    take = os.path.join(os.path.dirname(proj), take) if take else None
+    key = _h([[b["say"] for b in story["beats"]], story.get("voice", "af_heart"), story.get("speed", 1.0),
+              [take, os.path.getsize(take), os.path.getmtime(take)] if take else None])
     cache = os.path.join(ad, "timing.json")
     if os.path.exists(cache):
         c = json.load(open(cache))
         if c.get("key") == key:
             return c["timing"], c["words"], c["total"]
-    vo, timing, total = voice.synth(story["beats"], ad, story.get("voice", "af_heart"), story.get("speed", 1.0),
-                                    lang=story.get("lang", "en-us"))
+    if take:
+        # a real narration take (your own voice, or any voice tool you like) instead of the built-in Kokoro voice
+        vo, timing, total = voice.from_take(take, story["beats"], ad, lang=story.get("lang", "en-us")[:2])
+    else:
+        vo, timing, total = voice.synth(story["beats"], ad, story.get("voice", "af_heart"), story.get("speed", 1.0),
+                                        lang=story.get("lang", "en-us"))
     words = voice.words(vo, story["beats"], timing)
     json.dump({"key": key, "timing": timing, "words": words, "total": total}, open(cache, "w"), indent=1)
     print(f"  voice {total:.1f}s, {len(timing)} beats")
     return timing, words, total
 
 
-def mix(story, proj, events, total):
+# Music that ships with the engine: Kevin MacLeod (incompetech.com), CC BY 4.0. The credit is written to CREDITS.txt.
+MUSIC = {
+    "investigations": ("investigations.ogg", "Investigations"),
+    "sneaky-snitch": ("sneaky-snitch.ogg", "Sneaky Snitch"),
+    "dark-fog": ("dark-fog.ogg", "Dark Fog"),
+}
+
+
+def mix(story, proj, events, total, timing=None):
     ad = os.path.join(proj, "assets", "audio")
+    root = os.path.dirname(proj)
     vo, sr = sf.read(os.path.join(ad, "vo.wav"), dtype="float32")
-    vo = resample_poly(vo, 2, 1) if sr == 24000 else vo
+    if vo.ndim > 1:
+        vo = vo.mean(1)
+    if sr != sfx.SR:
+        vo = resample_poly(vo, sfx.SR, sr).astype(np.float32)
     n = int((total + 0.5) * sfx.SR)
     out = np.zeros(n, np.float32)
     out[: min(n, len(vo))] += vo[:n]
-    fx = sfx.make_events(events, total)[:n]
-    out[: len(fx)] += fx * story.get("sfx_gain", 0.32)
-    if story.get("music", "bed") == "bed":
+    voice = out.copy()
+    # foley: recorded paper and card handling (v2, default) or the old synthesised set ("foley": "v1")
+    fx = (sfx.make_events(events, total) if story.get("foley") == "v1" else sfx.make_events_v2(events, total))[:n]
+    out[: len(fx)] += fx * story.get("sfx_gain", 0.5)
+    music = story.get("music", "investigations")
+    if music == "bed":
         bd = sfx.bed(total, bpm=story.get("bpm", 72))[:n]
         out[: len(bd)] += bd * story.get("music_gain", 0.22)
-    elif story.get("music") not in (None, "none"):
-        m, msr = sf.read(os.path.join(os.path.dirname(proj), story["music"]), dtype="float32")
-        if m.ndim > 1:
-            m = m.mean(1)
-        if msr != sfx.SR:
-            m = resample_poly(m, sfx.SR, msr)
-        m = m[:n]
-        out[: len(m)] += m * story.get("music_gain", 0.12)
+    elif music not in (None, "none"):
+        if music in MUSIC:
+            path = os.path.join(HERE, "music", MUSIC[music][0])
+            line = (f'"{MUSIC[music][1]}" Kevin MacLeod (incompetech.com). '
+                    f"Licensed under Creative Commons: By Attribution 4.0. http://creativecommons.org/licenses/by/4.0/")
+            cred = os.path.join(root, "CREDITS.txt")
+            old = open(cred, encoding="utf-8").read() if os.path.exists(cred) else ""
+            if line not in old:
+                open(cred, "a", encoding="utf-8").write(("\n" if old and not old.endswith("\n") else "") + "music: " + line + "\n")
+        else:
+            path = os.path.join(root, music)
+        # a stop-down before every beat marked "drop": the music cuts out for a breath, then the line lands
+        cuts = [tm["start"] for b, tm in zip(story["beats"], timing or []) if b.get("drop")]
+        m = sfx.music_track(path, total, cuts=cuts, start=story.get("music_start", 0.0))[:n]
+        m = sfx.duck(m, voice, depth_db=story.get("duck_db", -8.0))
+        out[: len(m)] += m * story.get("music_gain", 0.16)
+        for c in cuts:  # the hit that the stop-down sets up
+            for kind, g in (("sub", 0.75), ("heavy", 0.35)):
+                x = sfx._take(kind, np.random.default_rng(int(c * 100)), {})
+                if x is not None:
+                    s = int(c * sfx.SR)
+                    e = min(n, s + len(x))
+                    out[s:e] += x[: e - s] * g * story.get("sfx_gain", 0.5)
     raw = os.path.join(ad, "mix_raw.wav")
     sf.write(raw, out / (np.max(np.abs(out)) or 1) * 0.7, sfx.SR)
-    subprocess.run(["ffmpeg", "-y", "-v", "error", "-i", raw, "-af",
-                    "loudnorm=I=-14:TP=-1.5:LRA=9,alimiter=limit=0.84:level=0", "-ar", "48000",
+    # two-pass, linear loudness: one static gain, so the voice is never pumped up and down
+    target = story.get("lufs", -14)
+    r = subprocess.run(["ffmpeg", "-v", "info", "-i", raw, "-af", f"loudnorm=I={target}:TP=-1.5:LRA=11:print_format=json",
+                        "-f", "null", "-"], capture_output=True, text=True, encoding="utf-8", errors="replace")
+    try:
+        js = json.loads(r.stderr[r.stderr.rindex("{"): r.stderr.rindex("}") + 1])
+        af = (f"loudnorm=I={target}:TP=-1.5:LRA=11:measured_I={js['input_i']}:measured_TP={js['input_tp']}:"
+              f"measured_LRA={js['input_lra']}:measured_thresh={js['input_thresh']}:offset={js['target_offset']}:linear=true,"
+              "alimiter=limit=0.84:level=0")
+    except (ValueError, KeyError):
+        af = f"loudnorm=I={target}:TP=-1.5:LRA=11,alimiter=limit=0.84:level=0"
+    subprocess.run(["ffmpeg", "-y", "-v", "error", "-i", raw, "-af", af, "-ar", "48000",
                     os.path.join(ad, "mix.wav")], check=True)
 
 
@@ -147,7 +195,7 @@ def make(path, render=False):
     print("animation")
     events = build.write_project(story, timing, words, total, proj, imgs)
     print("sound")
-    mix(story, proj, events, total)
+    mix(story, proj, events, total, timing)
     r = subprocess.run([NPX, "hyperframes", "check", proj], capture_output=True, text=True, encoding="utf-8", errors="replace")
     errs = [ln.strip() for ln in (r.stdout + r.stderr).splitlines() if ln.strip().startswith("✗")]
     print(f"check: {len(errs)} errors")
@@ -172,6 +220,18 @@ if __name__ == "__main__":
         if len(sys.argv) > 3 and not sys.argv[3].startswith("--"):
             fetch.contact_sheet(c, sys.argv[3])
             print("sheet:", sys.argv[3])
+    elif cmd == "sheet":
+        story, root, proj = load(sys.argv[2])
+        c = json.load(open(os.path.join(proj, "assets", "audio", "timing.json")))
+        tm, total = c["timing"], c["total"]
+        ats = []
+        for k, x in enumerate(tm):
+            end = tm[k + 1]["start"] if k + 1 < len(tm) else total
+            last = k + 1 == len(tm)
+            ats.append(round(max(x["start"] + 0.3, end - (0.12 if last else 0.4)), 2))  # the last pose before the next paper wipe
+        out = os.path.join(root, "snaps")
+        subprocess.run([NPX, "hyperframes", "snapshot", proj, "--at", ",".join(str(a) for a in ats), "-o", out, "--no-end"], check=True)
+        print(out)
     elif cmd == "snap":
         story, root, proj = load(sys.argv[2])
         out = os.path.join(root, "snaps")

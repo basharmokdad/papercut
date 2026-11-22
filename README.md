@@ -2,9 +2,13 @@
 
 **Vox-style paper-collage documentaries, made by Claude, for free, on your own computer.**
 
-One topic in, one finished vertical short out: halftone cut-outs, torn paper, rubber stamps, maps, typewriter documents, stop-motion on twos, paper sound effects, captions and a voice. No video model, no image model, no credits.
+One topic in, one finished vertical short out: halftone cut-outs that fill the frame, layered paper worlds, headlines and captions that build word by word with the voice, rubber stamps, maps, typewriter documents, stop-motion on twos and paper sound effects. No video model, no image model, no credits.
 
-![Frames from the four example films](docs/frames.jpg)
+![Frames from the Apollo 13 example](docs/frames-v2.jpg)
+
+The first version, for comparison:
+
+![Frames from the first version](docs/frames.jpg)
 
 <p>
 <img src="docs/demo-hopper.gif" width="240" alt="Grace Hopper cut-out assembling on red card">
@@ -18,9 +22,11 @@ AI video tools invent the picture, and every clip costs credits. papercut builds
 1. **Claude** checks the facts, writes a 10-14 beat script and picks the photos.
 2. **Wikimedia Commons** supplies the photos. Only public domain and CC0 by default; every photo is credited automatically.
 3. **rembg** removes the background, then the engine prints it as halftone dots on paper, cuts a scissor border, adds a misregistered colour offset and a real shadow.
-4. **Kokoro** (an open voice model, runs on the CPU) reads the script. **faster-whisper** times every word for the captions.
-5. **HyperFrames** animates it as HTML: every piece slides, drops or stamps in at 12 poses a second, boils a pixel like a real animation table, and the camera pushes in step by step.
-6. Paper slides, taps, stamp thuds, tape and a typewriter are **synthesised in code**, mixed under the voice to -14 LUFS.
+4. The engine prints the **paper world** behind it from a seed: a newspaper page set from your own title and script, a sky with drifting paper clouds, a night sky with a cut-out moon, rings of torn card, graph paper. Torn strips cross the frame behind the subject.
+5. **Kokoro** (an open voice model, runs on the CPU) reads the script. **faster-whisper** times every word, so headline strips, giant letters, hand-written notes and caption chips each land on the word being spoken.
+6. **HyperFrames** animates it as HTML: subjects rise from the bottom of the frame, every piece slides, drops or stamps in at 12 poses a second, boils a pixel like a real animation table, and keeps pushing in after it lands.
+7. **Real sound.** Paper slides, card landings, book thuds and clicks are real recordings (Kenney, CC0); whooshes and low hits come from Earshot (MIT). Every flying piece gets a whoosh, every word that pops on gets a click, and a music track by Kevin MacLeod (CC BY 4.0) ducks under the voice and drops out before the lines that turn the story. Mixed to -14 LUFS.
+8. **Motion like a camera.** Pieces are motion-blurred while they fly, scenes change with blurred whip-pans, and soft window light drifts across the paper.
 
 Everything that ships in the video is either generated from a seed or free to use. Nothing is rented.
 
@@ -53,18 +59,19 @@ mkdir my-film && cd my-film
 ../.venv/bin/python ../engine/papercut.py search "Grace Hopper" sheet.png   # find photos, look at sheet.png
 # write story.json (see examples/ and SKILL.md)
 ../.venv/bin/python ../engine/papercut.py make story.json                   # build
-../.venv/bin/python ../engine/papercut.py snap story.json 3.2,7.5           # check frames
+../.venv/bin/python ../engine/papercut.py sheet story.json                  # one still per beat, in snaps/
+../.venv/bin/python ../engine/papercut.py snap story.json 3.2,7.5           # or stills at exact seconds
 ../.venv/bin/python ../engine/papercut.py make story.json --render          # render the MP4
 ```
 
-Each film is one `story.json`: the images and a list of beats. A beat is one line of narration plus one scene: `hero`, `photo`, `duo`, `number`, `document`, `timeline`, `quote` or `map`. The full reference and the picture rules are in [SKILL.md](SKILL.md).
+Each film is one `story.json`: the images and a list of beats. A beat is one line of narration plus one scene: `hero`, `kinetic`, `scene`, `photo`, `duo`, `number`, `document`, `timeline`, `quote` or `map`. Any scene can add a world (`bg`), a torn strip (`band`), a `headline`, giant `letters`, `tags` and hand-written `notes`. The full reference and the five rules that make it look right are in [SKILL.md](SKILL.md).
 
 ## Examples
 
 | Film | Scenes it shows off |
 |---|---|
 | [The first computer bug](examples/01-first-bug/story.json) | the real 1947 logbook, ransom-letter numbers, timeline |
-| [Apollo 13](examples/02-apollo-13/story.json) | NASA photos, quotes, document checklist |
+| [Apollo 13](examples/02-apollo-13/story.json) | the full new look: full-frame cut-outs, newspaper and night-sky worlds, building headlines, word-by-word sentences, notes with arrows |
 | [The Mona Lisa theft](examples/03-mona-lisa/story.json) | paper maps with pins, police report with a redaction bar |
 | [ENIAC's six programmers](examples/04-eniac/story.json) | typed name list, stamps, hall-of-fame number |
 
@@ -72,7 +79,7 @@ Each one renders in about 2 minutes on a normal PC.
 
 ## Limits
 
-- English voices only out of the box (Kokoro). Any language works if you supply your own `vo.wav` per beat.
+- The built-in voice (Kokoro) is quick but sounds synthetic. For a film people will watch, record the script once or make a free natural take with `tools/voxcpm_take.py` (VoxCPM2, needs a GPU) and set `"voice_file"`. Any language Whisper understands works that way.
 - It is only as good as the photos: dark or busy photos cut badly. `pieces.jpg` shows every cut-out before you render.
 - It makes 9:16 shorts first; 16:9 works but its layouts are less tuned.
 
