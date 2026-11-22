@@ -6,13 +6,10 @@ One topic in, one finished vertical short out: halftone cut-outs that fill the f
 
 ![Frames from the Apollo 13 example](docs/frames-v2.jpg)
 
-The first version, for comparison:
-
-![Frames from the first version](docs/frames.jpg)
-
 <p>
-<img src="docs/demo-hopper.gif" width="240" alt="Grace Hopper cut-out assembling on red card">
-<img src="docs/demo-map.gif" width="240" alt="Paper map of France with a pin on the Louvre">
+<img src="docs/demo-headline.gif" width="240" alt="An astronaut cut-out rises into frame and headline strips land on each spoken phrase">
+<img src="docs/demo-words.gif" width="240" alt="A sentence printed word by word in two typefaces, with a highlighter swipe">
+<img src="docs/demo-board.gif" width="240" alt="Photos fly onto an evidence board, get pinned and joined with red string">
 </p>
 
 ## How it works
@@ -75,7 +72,7 @@ Each film is one `story.json`: the images and a list of beats. A beat is one lin
 | [The Mona Lisa theft](examples/03-mona-lisa/story.json) | paper maps with pins, police report with a redaction bar |
 | [ENIAC's six programmers](examples/04-eniac/story.json) | typed name list, stamps, hall-of-fame number |
 
-Each one renders in about 2 minutes on a normal PC.
+A 40-second film renders in a few minutes on a normal PC.
 
 ## Limits
 
